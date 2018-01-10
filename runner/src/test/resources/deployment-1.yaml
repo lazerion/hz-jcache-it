@@ -1,0 +1,29 @@
+version: '2'
+services:
+  hazelcast-client:
+    image: client:3.10-1.1
+    container_name: client
+    depends_on:
+        - hazelcast
+    volumes:
+        - ./hz/client:/configFolder
+        - ./hz/cache.1.1:/jcache
+    environment:
+        - JAVA_OPTS=-Dhazelcast.client.config=/configFolder/hazelcast-client.xml
+        - CLASSPATH=/jcache/*
+    links:
+        - "hazelcast:hazelcast"
+    ports:
+        - "5701"
+        - "4567:4567"
+
+  hazelcast:
+    image: hz:3.10-1.1
+    volumes:
+        - ./hz/server:/configFolder
+        - ./hz/cache.1.1:/jcache
+    environment:
+        - JAVA_OPTS=-Dhazelcast.config=/configFolder/hazelcast.xml
+        - CLASSPATH=/jcache/*
+    ports:
+        - "5701"
