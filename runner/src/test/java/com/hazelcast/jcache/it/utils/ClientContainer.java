@@ -35,7 +35,6 @@ public class ClientContainer {
             final String stats = response.body().string();
             return Optional.of(new Gson().fromJson(stats, CacheStats.class));
         } catch (Exception ex) {
-            logger.error(ex.getMessage());
             return Optional.empty();
         }
     }

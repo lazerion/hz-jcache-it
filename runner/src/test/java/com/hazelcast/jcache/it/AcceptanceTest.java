@@ -10,7 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
@@ -61,13 +63,20 @@ public class AcceptanceTest {
     }
 
     @Test
-    public void shouldRollingUpgradeSuccessful() throws IOException {
-        cli.up("deployment-3.yaml").scale("hazelcast", 3);
+    public void shouldRollingUpgradeSuccessful() throws IOException, InterruptedException {
+        cli.up("deployment-3.yaml");
         ClientContainer client = new ClientContainer();
 
-        verifyStatsForCache10(client);
-
-
+        Arrays.asList("hazelcast-1", "hazelcast-2")
+                .forEach(it -> {
+                    try {
+                        verifyStatsForCache10(client);
+                        cli.upgrade("upgrade.yaml", it);
+                        TimeUnit.SECONDS.sleep(10);
+                    } catch (IOException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
     }
 
     private void verifyStatsForCache10(ClientContainer client) {

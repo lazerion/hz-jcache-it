@@ -50,7 +50,7 @@ public class ComposeCli {
         String line = String.format("docker-compose -f %s down", this.project.getAbsoluteFile());
         CommandLine cmdLine = CommandLine.parse(line);
         DefaultExecutor executor = new DefaultExecutor();
-        int status =  executor.execute(cmdLine);
+        int status = executor.execute(cmdLine);
         assertTrue(status == 0);
         return this;
     }
@@ -61,6 +61,32 @@ public class ComposeCli {
         DefaultExecutor executor = new DefaultExecutor();
         int status = executor.execute(cmdLine);
         assertTrue(status == 0);
+        return this;
+    }
+
+    public ComposeCli upgrade(String upgrade, String service) throws IOException {
+        if (StringUtils.isBlank(upgrade)) {
+            throw new IllegalArgumentException("invalid upgrade file");
+        }
+
+        URL url = Thread.currentThread().getContextClassLoader().getResource(upgrade);
+        File file = new File(url.getPath());
+
+        if (!file.exists()) {
+            throw new IllegalArgumentException("Upgrade file does not exist");
+        }
+
+        // uses default time out 10 secs
+        String line = String.format("docker-compose -f %s -f %s up -d --no-deps --no-build %s",
+                this.project.getAbsoluteFile(),
+                file.getAbsoluteFile(),
+                service);
+
+        CommandLine cmdLine = CommandLine.parse(line);
+        DefaultExecutor executor = new DefaultExecutor();
+        int status = executor.execute(cmdLine);
+        assertTrue(status == 0);
+
         return this;
     }
 
@@ -78,13 +104,13 @@ public class ComposeCli {
         return filterIp(outputStream.toString());
     }
 
-    private String filterIp(String raw){
+    private String filterIp(String raw) {
 
         Pattern pattern = Pattern.compile(IP_ADDRESS_PATTERN);
         Matcher matcher = pattern.matcher(raw);
         if (matcher.find()) {
             return matcher.group();
-        } else{
+        } else {
             throw new IllegalArgumentException("unable to find client ip");
         }
     }
