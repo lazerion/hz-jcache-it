@@ -20,14 +20,12 @@ public class ComposeCli {
             "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)";
 
 
-    private String deployment;
     private File project;
 
     public ComposeCli up(String deployment) throws IOException {
         if (StringUtils.isBlank(deployment)) {
             throw new IllegalArgumentException("Deployment can not be blank");
         }
-        this.deployment = deployment;
 
         URL url = Thread.currentThread().getContextClassLoader().getResource(deployment);
         File file = new File(url.getPath());

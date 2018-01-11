@@ -7,7 +7,7 @@ services:
         - hazelcast
     volumes:
         - ./hz/client:/configFolder
-        - ./hz/cache.1.1:/jcache
+        - ./hz/cache.1.0:/jcache
     environment:
         - JAVA_OPTS=-Dhazelcast.client.config=/configFolder/hazelcast-client.xml
     links:
@@ -17,10 +17,10 @@ services:
         - "4567:4567"
 
   hazelcast:
-    image: hz:jc-11
+    image: hz:jc-10
     volumes:
         - ./hz/server:/configFolder
-        - ./hz/cache.1.1:/jcache
+        - ./hz/cache.1.0:/jcache
     environment:
         - JAVA_OPTS=-Dhazelcast.config=/configFolder/hazelcast.xml
         - CLASSPATH=/jcache/*

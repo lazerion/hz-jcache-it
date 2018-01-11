@@ -9,18 +9,18 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>client-jc-11</artifactId>
+    <artifactId>client-jc</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>javax.cache</groupId>
             <artifactId>cache-api</artifactId>
-            <version>1.1.0</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-all</artifactId>
-            <version>3.10-SNAPSHOT</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -81,14 +81,15 @@
                 <configuration>
                     <images>
                         <image>
-                            <name>client:3.10-1.1</name>
-                            <alias>client:3.10-1.1</alias>
+                            <name>client:jc</name>
+                            <alias>client:jc</alias>
                             <build>
                                 <from>openjdk:8-slim</from>
                                 <assembly>
                                     <descriptorRef>artifact</descriptorRef>
                                 </assembly>
-                                <cmd>java -jar $JAVA_OPTS maven/${project.name}-${project.version}.jar</cmd>
+                                <!--<cmd>java -jar $JAVA_OPTS maven/${project.name}-${project.version}.jar</cmd>-->
+                                <cmd>java -cp ./maven/*:/jcache/* $JAVA_OPTS com.hazelcast.jcache.it.client.DummyClient</cmd>
                             </build>
                         </image>
                     </images>
