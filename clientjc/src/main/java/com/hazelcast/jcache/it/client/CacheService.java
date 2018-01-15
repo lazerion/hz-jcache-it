@@ -6,9 +6,13 @@ import com.hazelcast.cache.ICache;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.cache.CacheManager;
+import javax.cache.Caching;
+import javax.cache.configuration.MutableConfiguration;
+import javax.cache.spi.CachingProvider;
 import java.util.stream.IntStream;
 
-public class CacheService {
+class CacheService {
     private final ICache<String, String> cache;
 
     CacheService(ICache<String, String> cache) {
@@ -28,5 +32,27 @@ public class CacheService {
         });
         cache.clear();
         return cache.getLocalCacheStatistics();
+    }
+
+    String ensureOpen() {
+        CachingProvider cachingProvider = Caching.getCachingProvider();
+        CacheManager cacheManager = cachingProvider.getCacheManager();
+
+        MutableConfiguration<String, String> config =
+                new MutableConfiguration<String, String>()
+                        .setTypes(String.class, String.class);
+
+        String cacheName = RandomStringUtils.randomAlphabetic(42);
+        cacheManager.createCache(cacheName, config);
+
+        cacheManager.close();
+
+        try {
+            cacheManager.getCacheNames();
+        } catch (IllegalStateException ex) {
+            return "OK";
+        }
+
+        throw new RuntimeException("Ensure Open is not working!");
     }
 }

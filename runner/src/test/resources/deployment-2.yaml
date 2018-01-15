@@ -8,6 +8,7 @@ services:
     volumes:
         - ./hz/client:/configFolder
         - ./hz/cache.1.0:/jcache
+        - ./hz/3.9.2:/hz
     environment:
         - JAVA_OPTS=-Dhazelcast.client.config=/configFolder/hazelcast-client.xml
     links:

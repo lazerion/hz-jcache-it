@@ -27,6 +27,7 @@ public class DummyClient {
 
     private static void startServer() {
         get("/stats", (req, res) -> new Gson().toJson(service.runOnEmpty()));
+        get("/ensure-open", (req, res) -> service.ensureOpen());
     }
 
     private static void initialize() {

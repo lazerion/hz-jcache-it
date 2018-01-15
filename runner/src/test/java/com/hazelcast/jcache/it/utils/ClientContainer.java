@@ -8,7 +8,6 @@ import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Optional;
 
 public class ClientContainer {
@@ -36,6 +35,23 @@ public class ClientContainer {
             return Optional.of(new Gson().fromJson(stats, CacheStats.class));
         } catch (Exception ex) {
             return Optional.empty();
+        }
+    }
+
+    public boolean ensureOpenForGetCacheNames(){
+        Request request = new Request.Builder()
+                .url(String.format("%s/ensure-open", baseUrl))
+                .build();
+
+        try {
+            Response response = client.newCall(request).execute();
+            if (!response.isSuccessful()) {
+                logger.error("error {}", response.message());
+                return false;
+            }
+            return true;
+        } catch (Exception ex) {
+            return false;
         }
     }
 }

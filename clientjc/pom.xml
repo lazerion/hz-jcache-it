@@ -89,7 +89,7 @@
                                     <descriptorRef>artifact</descriptorRef>
                                 </assembly>
                                 <!--<cmd>java -jar $JAVA_OPTS maven/${project.name}-${project.version}.jar</cmd>-->
-                                <cmd>java -cp ./maven/*:/jcache/* $JAVA_OPTS com.hazelcast.jcache.it.client.DummyClient</cmd>
+                                <cmd>java -cp ./maven/*:/jcache/*:/hz/* $JAVA_OPTS com.hazelcast.jcache.it.client.DummyClient</cmd>
                             </build>
                         </image>
                     </images>

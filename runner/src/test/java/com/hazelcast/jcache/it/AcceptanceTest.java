@@ -43,15 +43,9 @@ public class AcceptanceTest {
         cli.up("deployment-1.yaml").scale("hazelcast", 3);
         ClientContainer client = new ClientContainer();
 
-        await().atMost(20, SECONDS).untilAsserted(() -> {
-                    Optional<CacheStats> stats = client.statistics();
-                    assertTrue(stats.isPresent());
-                    logger.info("Stats {}", stats);
-                    assertThat(stats.get().getHits(), is(stats.get().getMisses()));
-                    assertThat(stats.get().getPuts(), is(stats.get().getMisses()));
-                    assertThat(stats.get().getRemovals(), is(stats.get().getPuts()));
-                }
-        );
+        verifyStatsForCache11(client);
+        // getCacheNames should throw IllegalStateException
+        await().atMost(20, SECONDS).untilAsserted(() -> assertTrue(client.ensureOpenForGetCacheNames()));
     }
 
     @Test
@@ -63,29 +57,74 @@ public class AcceptanceTest {
     }
 
     @Test
-    public void shouldRollingUpgradeSuccessful() throws IOException, InterruptedException {
-        cli.up("deployment-3.yaml");
+    public void shouldWorkWithClientOnCache11AndMembersOnCache11() throws IOException, InterruptedException {
+        cli.up("deployment-3.yaml").scale("hazelcast", 3);
+        ClientContainer client = new ClientContainer();
+
+        verifyStatsForCache11(client);
+    }
+
+    @Test
+    public void shouldRollingUpgradeSuccessfulFrom_3_9_2_To_3_10() throws IOException, InterruptedException {
+        cli.up("deployment-4.yaml");
         ClientContainer client = new ClientContainer();
 
         Arrays.asList("hazelcast-1", "hazelcast-2")
                 .forEach(it -> {
                     try {
                         verifyStatsForCache10(client);
-                        cli.upgrade("upgrade.yaml", it);
-                        TimeUnit.SECONDS.sleep(10);
+                        cli.upgrade("upgrade-3.10.yaml", it);
+                        TimeUnit.SECONDS.sleep(20);
                     } catch (IOException | InterruptedException e) {
                         e.printStackTrace();
                     }
                 });
+
+        verifyStatsForCache10(client);
+        cli.upgrade("upgrade-3.10.yaml", "hazelcast-client");
+        verifyStatsForCache11(client);
+    }
+
+    @Test
+    public void shouldRollingUpgradeSuccessfulFrom_3_9_2_To_3_9_3() throws IOException, InterruptedException {
+        cli.up("deployment-4.yaml");
+        ClientContainer client = new ClientContainer();
+
+        Arrays.asList("hazelcast-1", "hazelcast-2")
+                .forEach(it -> {
+                    try {
+                        verifyStatsForCache10(client);
+                        cli.upgrade("upgrade-3.9.3.yaml", it);
+                        TimeUnit.SECONDS.sleep(20);
+                    } catch (IOException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        verifyStatsForCache10(client);
+        cli.upgrade("upgrade-3.9.3.yaml", "hazelcast-client");
+        verifyStatsForCache11(client);
     }
 
     private void verifyStatsForCache10(ClientContainer client) {
-        await().atMost(20, SECONDS).untilAsserted(() -> {
+        await().atMost(30, SECONDS).untilAsserted(() -> {
                     Optional<CacheStats> stats = client.statistics();
                     assertTrue(stats.isPresent());
                     assertThat(stats.get().getHits(), is(stats.get().getPuts()));
                     // Bug is on JCache 1.0
                     assertThat(stats.get().getMisses(), is(0));
+                    assertThat(stats.get().getRemovals(), is(stats.get().getPuts()));
+                }
+        );
+    }
+
+    private void verifyStatsForCache11(ClientContainer client) {
+        await().atMost(30, SECONDS).untilAsserted(() -> {
+                    Optional<CacheStats> stats = client.statistics();
+                    assertTrue(stats.isPresent());
+                    logger.info("Stats {}", stats);
+                    assertThat(stats.get().getHits(), is(stats.get().getMisses()));
+                    assertThat(stats.get().getPuts(), is(stats.get().getMisses()));
                     assertThat(stats.get().getRemovals(), is(stats.get().getPuts()));
                 }
         );
