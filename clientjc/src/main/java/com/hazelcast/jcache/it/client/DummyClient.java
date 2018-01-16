@@ -1,18 +1,13 @@
 package com.hazelcast.jcache.it.client;
 
 import com.google.gson.Gson;
-import com.hazelcast.cache.ICache;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.cache.CacheManager;
-import javax.cache.Caching;
-import javax.cache.configuration.MutableConfiguration;
-import javax.cache.spi.CachingProvider;
 import java.util.concurrent.TimeUnit;
 
 import static spark.Spark.get;
+import static spark.Spark.post;
 
 public class DummyClient {
 
@@ -28,23 +23,17 @@ public class DummyClient {
     private static void startServer() {
         get("/stats", (req, res) -> new Gson().toJson(service.runOnEmpty()));
         get("/ensure-open", (req, res) -> service.ensureOpen());
+        get("/snapshot", (req, res) -> new Gson().toJson(service.snapshot()));
+        post("/snapshot/:version", (req, res) -> {
+            String version = req.params(":version");
+            Snapshot snapshot = new Gson().fromJson(req.body(), Snapshot.class);
+            return service.verify(snapshot, version);
+        });
     }
 
     private static void initialize() {
         logger.info("Initializing service");
-
-        CachingProvider cachingProvider = Caching.getCachingProvider();
-        CacheManager cacheManager = cachingProvider.getCacheManager();
-
-        MutableConfiguration<String, String> config =
-                new MutableConfiguration<String, String>()
-                        .setTypes(String.class, String.class)
-                        .setStatisticsEnabled(true);
-
-
-        String cacheName = RandomStringUtils.randomAlphabetic(42);
-        ICache<String, String> cache = (ICache<String, String>) cacheManager.createCache(cacheName, config);
-        service = new CacheService(cache);
+        service = new CacheService();
         logger.info("Initialized cache");
     }
 }

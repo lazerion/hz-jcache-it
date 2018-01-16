@@ -3,6 +3,7 @@ package com.hazelcast.jcache.it;
 import com.hazelcast.jcache.it.utils.CacheStats;
 import com.hazelcast.jcache.it.utils.ClientContainer;
 import com.hazelcast.jcache.it.utils.ComposeCli;
+import com.hazelcast.jcache.it.utils.Snapshot;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,8 +17,10 @@ import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class AcceptanceTest {
@@ -76,13 +79,43 @@ public class AcceptanceTest {
                         cli.upgrade("upgrade-3.10.yaml", it);
                         TimeUnit.SECONDS.sleep(20);
                     } catch (IOException | InterruptedException e) {
-                        e.printStackTrace();
+                        throw new RuntimeException("Upgrade failure");
                     }
                 });
 
         verifyStatsForCache10(client);
         cli.upgrade("upgrade-3.10.yaml", "hazelcast-client");
         verifyStatsForCache11(client);
+    }
+
+    @Test
+    public void shouldCacheDataIntactUpgradeFrom_3_9_2_To_3_10() throws IOException, InterruptedException {
+        cli.up("deployment-4.yaml");
+        ClientContainer client = new ClientContainer();
+
+        with().pollInterval(1, TimeUnit.SECONDS).await().atMost(20, SECONDS)
+                .untilAsserted(() -> assertNotNull(client.snapshot()));
+
+        final Snapshot snapshot = client.snapshot();
+        assertNotNull(snapshot);
+
+        Arrays.asList("hazelcast-1", "hazelcast-2")
+                .forEach(it -> {
+                    try {
+                        cli.upgrade("upgrade-3.10.yaml", it);
+                        TimeUnit.SECONDS.sleep(20);
+                    } catch (IOException | InterruptedException e) {
+                        throw new RuntimeException("Upgrade failure");
+                    }
+                });
+
+        with().pollInterval(1, TimeUnit.SECONDS).await().atMost(20, SECONDS)
+                .untilAsserted(() -> assertTrue(client.verify(snapshot, "1.0")));
+
+        cli.upgrade("upgrade-3.10.yaml", "hazelcast-client");
+
+        with().pollInterval(1, TimeUnit.SECONDS).await().atMost(20, SECONDS)
+                .untilAsserted(() -> assertTrue(client.verify(snapshot, "1.1")));
     }
 
     @Test

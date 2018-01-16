@@ -2,9 +2,7 @@ package com.hazelcast.jcache.it.utils;
 
 
 import com.google.gson.Gson;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +10,8 @@ import java.util.Optional;
 
 public class ClientContainer {
     private final Logger logger = LoggerFactory.getLogger(ClientContainer.class);
+    private static final MediaType JSON
+            = MediaType.parse("application/json; charset=utf-8");
 
     private final String baseUrl;
     private OkHttpClient client = new OkHttpClient();
@@ -38,11 +38,43 @@ public class ClientContainer {
         }
     }
 
-    public boolean ensureOpenForGetCacheNames(){
+    public boolean ensureOpenForGetCacheNames() {
         Request request = new Request.Builder()
                 .url(String.format("%s/ensure-open", baseUrl))
                 .build();
 
+        return sendRequest(request);
+    }
+
+    public Snapshot snapshot() {
+        Request request = new Request.Builder()
+                .url(String.format("%s/snapshot", baseUrl))
+                .build();
+
+        try {
+            Response response = client.newCall(request).execute();
+            if (!response.isSuccessful()) {
+                return null;
+            }
+            final String snap = response.body().string();
+            return new Gson().fromJson(snap, Snapshot.class);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    public boolean verify(Snapshot snapshot, String version) {
+
+        RequestBody body = RequestBody.create(JSON, new Gson().toJson(snapshot));
+        Request request = new Request.Builder()
+                .url(String.format("%s/snapshot/%s", baseUrl, version))
+                .post(body)
+                .build();
+
+        return sendRequest(request);
+    }
+
+    private boolean sendRequest(Request request) {
         try {
             Response response = client.newCall(request).execute();
             if (!response.isSuccessful()) {
